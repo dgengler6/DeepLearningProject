@@ -140,3 +140,29 @@ train_model2(model2, train_input, train_classes, mini_batch_size=200, nb_epochs=
 nb_test_errors = compute_nb_errors2(model2, test_input, test_classes, mini_batch_size=200)
 print('test error Net {:0.2f}% {:d}/{:d}'.format((100 * nb_test_errors) / test_input_first.size(0),
                                                       nb_test_errors, test_input_first.size(0)))
+
+
+# Random Utility functions 
+
+# This one displays digits 
+import matplotlib.pyplot as plt
+
+print(train_input.shape)
+
+fig ,axes = plt.subplots(10, 2)
+for i in range(10):
+    first = train_input[i][0,:,:]
+    second = train_input[i][1,:,:]
+    first_label = train_classes[i][0]
+    second_label = train_classes[i][1]
+    axes[i,0].imshow(first, cmap='gray')
+    axes[i,0].set_ylabel(str(first_label.item()))
+    axes[i,1].imshow(second, cmap='gray', interpolation='none')
+    axes[i,1].set_ylabel(str(second_label.item()))
+    axes[i,0].set_xticks([])
+    axes[i,0].set_yticks([])
+    axes[i,1].set_xticks([])
+    axes[i,1].set_yticks([])
+    fig
+
+    
