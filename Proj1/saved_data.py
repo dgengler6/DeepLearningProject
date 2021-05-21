@@ -141,7 +141,101 @@ nb_test_errors = compute_nb_errors2(model2, test_input, test_classes, mini_batch
 print('test error Net {:0.2f}% {:d}/{:d}'.format((100 * nb_test_errors) / test_input_first.size(0),
                                                       nb_test_errors, test_input_first.size(0)))
 
+# Train functions using MSE (worse performance than CrossEntropyLoss 
 
+def train_model_simple_net(model, train_input, train_target, mini_batch_size, nb_epochs = 100, use_optimizer= None, _print=False):
+    criterion = nn.MSELoss()
+    eta = 1e-3
+    if use_optimizer == "sgd":
+        optimizer = optim.SGD(model.parameters(), lr=eta)
+    if use_optimizer == "adam":
+        optimizer = optim.Adam(model.parameters(), lr=eta)
+    for e in range(nb_epochs):
+        acc_loss = 0
+
+        for b in range(0, train_input.size(0), mini_batch_size):
+            output = model(train_input.narrow(0, b, mini_batch_size))
+            target = train_target.narrow(0, b, mini_batch_size).reshape(output.shape).float()
+            
+            loss = criterion(output, target)
+            acc_loss = acc_loss + loss.item()
+ 
+            model.zero_grad()
+            loss.backward()
+            
+            if use_optimizer != None :
+                optimizer.step()
+            else :
+                with torch.no_grad():
+                    for p in model.parameters():
+                        p -= eta * p.grad
+        if _print:
+            print(e, acc_loss)
+
+def train_model_auxiliary_loss(model, train_input, train_target, train_classes, mini_batch_size, nb_epochs = 100, use_optimizer= None, _print=False):
+    criterion_auxilary = nn.CrossEntropyLoss()
+    criterion_final = nn.MSELoss()
+    
+    eta = 1e-3
+    if use_optimizer == "sgd":
+        optimizer = optim.SGD(model.parameters(), lr=eta)
+    if use_optimizer == "adam":
+        optimizer = optim.Adam(model.parameters(), lr=eta)
+    for e in range(nb_epochs):
+        acc_loss = 0
+
+        for b in range(0, train_input.size(0), mini_batch_size):
+            digit_1, digit_2, comparison = model(train_input.narrow(0, b, mini_batch_size))
+            
+            target_comparison = train_target.narrow(0, b, mini_batch_size).reshape(comparison.shape).float()
+            
+            target_digit_1, target_digit_2 = train_classes.narrow(0, b, mini_batch_size)[:,0], train_classes.narrow(0, b, mini_batch_size)[:,1]
+            loss1 = criterion_auxilary(digit_1, target_digit_1)
+            loss2 = criterion_auxilary(digit_2, target_digit_2)
+            loss3 = criterion_final(comparison, target_comparison)
+            acc_loss = acc_loss + loss1.item() + loss2.item() + loss3.item()
+ 
+            model.zero_grad()
+            loss1.backward(retain_graph=True)
+            loss2.backward(retain_graph=True)
+            loss3.backward()
+            
+            if use_optimizer != None :
+                optimizer.step()
+            else :
+                with torch.no_grad():
+                    for p in model.parameters():
+                        p -= eta * p.grad
+        if _print :
+            print(e, acc_loss)
+# First Benchmark 
+
+# Benchmark of the basic network with Adam optimizer
+nb_trials = 10
+N = 1000
+performances = []
+for trial in range(nb_trials):
+    
+    # Generate Data 
+    train_input, train_target, train_classes, test_input, test_target, test_classes = prologue.generate_pair_sets(N)
+    train_target_one_hot = prologue.convert_to_one_hot_labels(train_input, train_target)
+    test_target_total = prologue.convert_to_one_hot_labels(test_input, test_target)
+    
+    # Define the model 
+    model_total = Simple_Net()
+    
+    # Train the model
+    train_model_simple_net(model_total, train_input, train_target_one_hot, mini_batch_size=250, 
+                      nb_epochs=25, use_optimizer="adam")
+    
+    # Evaluate performances 
+    nb_test_errors = compute_nb_errors_simple_net(model_total, test_input, test_target_total, mini_batch_size=250)
+    print('test error Net {:d} {:0.2f}% {:d}/{:d}'.format(trial, (100 * nb_test_errors) / test_input.size(0),
+                                                          nb_test_errors, test_input.size(0)))
+    performances.append(nb_test_errors)
+    
+mean_perf = 100 * sum(performances) / (N * nb_trials)
+print(f"Average precision of this architecture {mean_perf}")
 # Random Utility functions 
 
 # This one displays digits 
@@ -165,4 +259,12 @@ for i in range(10):
     axes[i,1].set_yticks([])
     fig
 
-    
+# this one returns comparison for some digits 
+for i in range(10):
+    input_to_test = test_input[i]
+    first_label = test_classes[i][0]
+    second_label = test_classes[i][1] 
+    s = input_to_test.shape
+    output = model_total(input_to_test.reshape([1,s[0], s[1], s[2]]))
+    _, predicted_classes = output.max(1)
+    print(f"Predicted : {first_label} {'>' if predicted_classes.item() == 0 else '<'} {second_label}")
