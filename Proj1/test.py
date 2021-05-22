@@ -3,6 +3,7 @@ import math
 import dlc_practical_prologue as prologue
 import models as m
 import train_functions as tr
+import utilities as u
 from torch import optim
 from torch import Tensor
 from torch import nn
@@ -43,15 +44,19 @@ def benchmark_model(model, train_function, evaluate_function, nb_trials=20, N=10
     std_dev = math.sqrt(sum(list(map(lambda x : x - mean_perf,performances))))/nb_trials
     print(f"With standard deviation of  {std_dev}")
     
+    return performances
+    
 
 print("Benchmark of the baseline model")
-benchmark_model(m.Base_Net, tr.train_model_base_ws, tr.compute_nb_errors_base_ws)
+results_base = benchmark_model(m.Base_Net, tr.train_model_base_ws, tr.compute_nb_errors_base_ws)
 
 print("Benchmark of the model with Weight Sharing")
-benchmark_model(m.Weight_Sharing_Net, tr.train_model_base_ws, tr.compute_nb_errors_base_ws)
+results_ws = benchmark_model(m.Weight_Sharing_Net, tr.train_model_base_ws, tr.compute_nb_errors_base_ws)
 
 print("Benchmark of the model with Weight Sharing and an auxiliary loss")
-benchmark_model(m.Auxiliary_Loss_Weight_Sharing_Net, tr.train_model_auxiliary_loss, tr.compute_nb_errors_auxilary_loss, model_requires_target_and_classes=True)
+results_ws_al = benchmark_model(m.Auxiliary_Loss_Weight_Sharing_Net, tr.train_model_auxiliary_loss, tr.compute_nb_errors_auxilary_loss, model_requires_target_and_classes=True)
 
 print("Benchmark of the model with Weight Sharing and an auxiliary loss and with additionnal Dropout layers (50 epochs)")
-benchmark_model(m.Auxiliary_Loss_Net_Dropout, tr.train_model_auxiliary_loss, tr.compute_nb_errors_auxilary_loss, model_requires_target_and_classes=True, nb_epochs=50)
+results_dropout = benchmark_model(m.Auxiliary_Loss_Net_Dropout, tr.train_model_auxiliary_loss, tr.compute_nb_errors_auxilary_loss, model_requires_target_and_classes=True, nb_epochs=50)
+
+u.plot_results(results_base, results_ws, results_ws_al, results_dropout)
