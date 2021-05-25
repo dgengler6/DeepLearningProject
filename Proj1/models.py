@@ -196,3 +196,45 @@ class Auxiliary_Loss_Net_Dropout(nn.Module):
         comparison = self.mlp(concatenated)
         return output_1, output_2, comparison  
     
+# Same model with a reduce number of parameters, the tested accuracy is worse but we meet the number of parameters required
+class Auxiliary_Loss_Net_Less_Parameters(nn.Module):
+    def __init__(self):
+        super().__init__()
+        
+        # Layers that handle digit classification 
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3)
+        self.fc1 = nn.Linear(256, 128)
+        self.fc2 = nn.Linear(128, 10)
+        
+        # Layers that handle comparisson 
+        self.fc3 = nn.Linear(20, 128)
+        self.fc4 = nn.Linear(128, 128)
+        self.fc5 = nn.Linear(128, 2)
+        
+    def cnn(self, x):
+        x = F.relu(F.max_pool2d(self.conv1(x), kernel_size=2))
+        x = F.relu(F.max_pool2d(self.conv2(x), kernel_size=2))
+        x = F.relu(self.fc1(x.view(-1, 256)))
+        x = self.fc2(x)
+        return x
+    
+    def mlp(self, x):
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        x = self.fc5(x)
+        return x
+    
+    def forward(self, x):
+        s = x.shape
+                
+        input_1 = x[:,0,:,:].reshape([s[0],1,s[2],s[3]])
+        input_2 = x[:,1,:,:].reshape([s[0],1,s[2],s[3]])
+
+        
+        output_1 = self.cnn(input_1)
+        output_2 = self.cnn(input_2)
+        concatenated = torch.cat((output_1, output_2), 1)
+        
+        comparison = self.mlp(concatenated)
+        return output_1, output_2, comparison

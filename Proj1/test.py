@@ -48,15 +48,23 @@ def benchmark_model(model, train_function, evaluate_function, nb_trials=20, N=10
     
 
 print("Benchmark of the baseline model")
+u.compute_nb_parameters(m.Base_Net(), "Baseline Model")
 results_base = benchmark_model(m.Base_Net, tr.train_model_base_ws, tr.compute_nb_errors_base_ws)
 
 print("Benchmark of the model with Weight Sharing")
+u.compute_nb_parameters(m.Weight_Sharing_Net(), "Weight Sharing Model")
 results_ws = benchmark_model(m.Weight_Sharing_Net, tr.train_model_base_ws, tr.compute_nb_errors_base_ws)
 
 print("Benchmark of the model with Weight Sharing and an auxiliary loss")
+u.compute_nb_parameters(m.Weight_Sharing_Net(), "Weight Sharing + Auxiliary Loss Model")
 results_ws_al = benchmark_model(m.Auxiliary_Loss_Weight_Sharing_Net, tr.train_model_auxiliary_loss, tr.compute_nb_errors_auxilary_loss, model_requires_target_and_classes=True)
 
 print("Benchmark of the model with Weight Sharing and an auxiliary loss and with additionnal Dropout layers (50 epochs)")
+u.compute_nb_parameters(m.Auxiliary_Loss_Net_Dropout(), "Dropout Model")
 results_dropout = benchmark_model(m.Auxiliary_Loss_Net_Dropout, tr.train_model_auxiliary_loss, tr.compute_nb_errors_auxilary_loss, model_requires_target_and_classes=True, nb_epochs=50)
+
+print("Benchmark of the WS + AL model with reduced number of parameters")
+u.compute_nb_parameters(m.Auxiliary_Loss_Net_Less_Parameters(), "WS + AL reduced Model")
+_ = benchmark_model(m.Auxiliary_Loss_Net_Less_Parameters, tr.train_model_auxiliary_loss, tr.compute_nb_errors_auxilary_loss, model_requires_target_and_classes=True)
 
 u.plot_results(results_base, results_ws, results_ws_al, results_dropout)
