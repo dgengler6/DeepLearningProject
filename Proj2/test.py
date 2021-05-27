@@ -20,7 +20,7 @@ train_input, test_input = normalize_data(train_input, test_input)
 
 
 # Creates a model with 2 input units, 1 output unit and 3 hidden Layers with 25 units each 
-model_sgd = Sequential([Linear(2, 25), ReLU(), Linear(25, 25), ReLU(), Linear(25, 25), Linear(25, 1)])
+model_sgd = Sequential([Linear(2, 25), ReLU(), Linear(25, 25), ReLU(), Linear(25, 25), ReLU(), Linear(25, 1)])
 
 # Train it using MSE Loss and SGD optimizer
 model_sgd = train_SGD(model_sgd, train_input, train_target, learning_rate=5e-5, nb_epochs=500, print_= True)
